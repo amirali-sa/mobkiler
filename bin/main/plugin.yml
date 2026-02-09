@@ -1,4 +1,0 @@
-name: mobkiler
-version: '1.0-SNAPSHOT'
-main: org.mobkiler.mobkiler.Mobkiler
-api-version: '1.21'
