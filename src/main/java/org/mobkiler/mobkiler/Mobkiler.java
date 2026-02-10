@@ -10,71 +10,38 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
+import org.mobkiler.mobkiler.listeners.MobSpawnListener;
+import org.mobkiler.mobkiler.managers.MobSpawnerManager;
 
 import java.util.HashMap;
 import java.util.UUID;
 
 public final class Mobkiler extends JavaPlugin implements Listener {
+    private static Mobkiler instance;
+    private MobSpawnerManager spawnerManager;
 
-    private final HashMap<UUID, Entity> spawnedMobs = new HashMap<>();
+    public static Mobkiler getInstance() {
+        return instance;
+    }
+
+    public MobSpawnerManager getSpawnerManager() {
+        return spawnerManager;
+    }
 
     @Override
     public void onEnable() {
-        getServer().getPluginManager().registerEvents(this, this);
+        instance = this;
+        spawnerManager = new MobSpawnerManager(this);
+
         getLogger().info("MobKiler enabled! Monsters will go BOOM!");
+
+        // register listener
+        getServer().getPluginManager().registerEvents(new MobSpawnListener(), this);
     }
 
     @Override
     public void onDisable() {
-        spawnedMobs.clear();
+        spawnerManager.clearMobs();
         getLogger().info("MobKiler disabled!");
-    }
-
-    @EventHandler
-    public void onMobSpawn(CreatureSpawnEvent event) {
-        Entity entity = event.getEntity();
-
-        // فقط ماب‌های Monster
-        if (!(entity instanceof Monster)) {
-            return;
-        }
-
-        // ذخیره در هش مپ
-        spawnedMobs.put(entity.getUniqueId(), entity);
-
-        BukkitScheduler scheduler = getServer().getScheduler();
-
-        // 4 ثانیه بعد (80 تیک) پرتاب به هوا
-        scheduler.runTaskLater(this, () -> {
-            if (!entity.isValid() || entity.isDead()) {
-                spawnedMobs.remove(entity.getUniqueId());
-                return;
-            }
-
-            // پرتاب به هوا
-            Vector velocity = entity.getVelocity();
-            velocity.setY(velocity.getY() + 2.0);
-            entity.setVelocity(velocity);
-
-            // 1 ثانیه بعد انفجار (20 تیک)
-            scheduler.runTaskLater(this, () -> {
-                if (!entity.isValid() || entity.isDead()) {
-                    spawnedMobs.remove(entity.getUniqueId());
-                    return;
-                }
-
-                Location loc = entity.getLocation();
-                World world = entity.getWorld();
-
-                // حذف ماب
-                entity.remove();
-                spawnedMobs.remove(entity.getUniqueId());
-
-                // انفجار!
-                world.createExplosion(loc, 4.0f, false, false);
-
-            }, 20L);
-
-        }, 80L);
     }
 }
